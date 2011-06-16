@@ -70,32 +70,29 @@ sub execute {
 	$handle->push_write($client_ver);
 
 	# send the query
-	# TODO: see AddQuery() and RunQueries()
 	my $request = $query->serialize;
 	my $num_queries = 1; # TODO: allow for > 1
-	my $full_request = pack ( "nnN/a*",
+	my $full_request = pack ("nnN/a*",
 		SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $request); 
 	$handle->push_write($full_request);
 
-	# read the response header
+	# read the response header and response
 	my $response_size = 0;
 	$handle->push_read(chunk => 8, sub {
 		my ($handle, $header) = @_;
 		my ($status, $ver, $len) = unpack("n2N", $header);
 		$response_size = $len;
-	});
 
-	# read the response
-	$handle->push_read(chunk => $response_size, sub {
-		my ($handle, $response) = @_;
-		# TODO: parse response (see RunQueries)
-		my $results = AnyEvent::Sphinx::Results->new(
-			response => \$response);
-		$cb->($results);
+		# read the response
+		$handle->push_read(chunk => $response_size, sub {
+			my ($handle, $response) = @_;
+			# TODO: parse response (see RunQueries)
+			my $results = AnyEvent::Sphinx::Results->new(
+				response => \$response);
+			$cb->($results);
+		});
 	});
-
-# TODO: turn results into an AnyEvent::Sphinx::Results object and return
-# that
+	return $self;
 }
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
