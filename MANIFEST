@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/AnyEvent-Sphinx.t
+lib/AnyEvent/Sphinx.pm
