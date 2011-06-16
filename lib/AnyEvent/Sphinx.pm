@@ -3,33 +3,100 @@ package AnyEvent::Sphinx;
 use 5.010001;
 use strict;
 use warnings;
-
-require Exporter;
-use AutoLoader qw(AUTOLOAD);
-
-our @ISA = qw(Exporter);
-
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use AnyEvent::Sphinx ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-	
-);
+use AnyEvent;
+use AnyEvent::Handle;
+use AnyEvent::Sphinx::Query;
+use AnyEvent::Sphinx::Results;
 
 our $VERSION = '0.01';
 
+# known searchd commands
+use constant SEARCHD_COMMAND_SEARCH	=> 0;
+use constant SEARCHD_COMMAND_EXCERPT	=> 1;
+use constant SEARCHD_COMMAND_UPDATE	=> 2;
+use constant SEARCHD_COMMAND_KEYWORDS	=> 3;
+use constant SEARCHD_COMMAND_PERSIST	=> 4;
+use constant SEARCHD_COMMAND_STATUS	=> 5;
+use constant SEARCHD_COMMAND_QUERY	=> 6;
+use constant SEARCHD_COMMAND_FLUSHATTRS	=> 7;
 
-# Preloaded methods go here.
+# current client-side command implementation versions
+use constant VER_COMMAND_SEARCH		=> 0x117;
+use constant VER_COMMAND_EXCERPT	=> 0x100;
+use constant VER_COMMAND_UPDATE	        => 0x102;
+use constant VER_COMMAND_KEYWORDS       => 0x100;
+use constant VER_COMMAND_STATUS         => 0x100;
+use constant VER_COMMAND_QUERY         => 0x100;
+use constant VER_COMMAND_FLUSHATTRS    => 0x100;
+
+# known searchd status codes
+use constant SEARCHD_OK			=> 0;
+use constant SEARCHD_ERROR		=> 1;
+use constant SEARCHD_RETRY		=> 2;
+use constant SEARCHD_WARNING		=> 3;
+
+sub new {
+}
+
+# connect to searchd on $host:$port and send the query represented by
+# the AnyEvent::Sphinx::Query object ($query).  The result will be an
+# AnyEvent::Sphinx::Results object passed to the callback ($cb)
+
+sub execute {
+	my ($host, $port, $query, $cb) = @_;
+
+	# store results here
+	my ($response, $header, $body);
+
+	my $handle; $handle = new AnyEvent::Handle
+		connect  => [$host => $port],
+		on_error => sub {
+			$cb->("ERROR: $!");
+			$handle->destroy; # explicitly destroy handle
+		},
+         on_eof   => sub {
+			$cb->($response, $header, $body);
+			$handle->destroy; # explicitly destroy handle
+		};
+
+	# read 4 byte protocol version
+	$handle->push_read(chunk => 4, sub {
+		my $ver = unpack("N*", $_[1]);
+		print "server version: $ver\n";
+	});
+
+	# send our version
+	my $client_ver = pack("N", 1);
+	$handle->push_write($client_ver);
+
+	# send the query
+	# TODO: see AddQuery() and RunQueries()
+	my $request = $query->serialize;
+	my $num_queries = 1; # TODO: allow for > 1
+	my $full_request = pack ( "nnN/a*",
+		SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $request); 
+	$handle->push_write($full_request);
+
+	# read the response header
+	my $response_size = 0;
+	$handle->push_read(chunk => 8, sub {
+		my ($handle, $header) = @_;
+		my ($status, $ver, $len) = unpack("n2N", $header);
+		$response_size = $len;
+	});
+
+	# read the response
+	$handle->push_read(chunk => $response_size, sub {
+		my ($handle, $response) = @_;
+		# TODO: parse response (see RunQueries)
+		my $results = AnyEvent::Sphinx::Results->new(
+			response => \$response);
+		$cb->($results);
+	});
+
+# TODO: turn results into an AnyEvent::Sphinx::Results object and return
+# that
+}
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
