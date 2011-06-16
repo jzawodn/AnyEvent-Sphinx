@@ -29,12 +29,6 @@ use constant VER_COMMAND_STATUS         => 0x100;
 use constant VER_COMMAND_QUERY         => 0x100;
 use constant VER_COMMAND_FLUSHATTRS    => 0x100;
 
-# known searchd status codes
-use constant SEARCHD_OK			=> 0;
-use constant SEARCHD_ERROR		=> 1;
-use constant SEARCHD_RETRY		=> 2;
-use constant SEARCHD_WARNING		=> 3;
-
 sub new {
 }
 
