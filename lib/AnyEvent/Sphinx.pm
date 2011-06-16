@@ -43,7 +43,7 @@ sub new {
 # AnyEvent::Sphinx::Results object passed to the callback ($cb)
 
 sub execute {
-	my ($host, $port, $query, $cb) = @_;
+	my ($self, $host, $port, $query, $cb) = @_;
 
 	# store results here
 	my ($response, $header, $body);
