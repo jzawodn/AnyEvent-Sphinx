@@ -1,4 +1,4 @@
-use Test::More tests => 17;
+use Test::More tests => 18;
 BEGIN { use_ok('AnyEvent::Sphinx::Query') };
 
 # new()
@@ -26,7 +26,16 @@ is($query->{_maxmatches}, 5000, "internal maxmatches");
 
 # serialize()
 ok($query->serialize, "serialize()");
-# TODO: compare to a known good copy?
+
+# compare to a known good copy
+my $good_serizlied;
+my $serialized = $query->serialize;
+
+open S, "<t/query.bin" or die "$!";
+read S, $good_serialized, 1024, 0;
+close S;
+
+is($serialized, $good_serialized, "serialized representation");
 
 # SetFilterRange()
 ok($query->SetFilterRange('foo', 0, 100), "SetFilterRange()");
