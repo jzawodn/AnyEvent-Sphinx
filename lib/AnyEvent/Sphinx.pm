@@ -11,25 +11,29 @@ use AnyEvent::Sphinx::Results;
 our $VERSION = '0.01';
 
 # known searchd commands
-use constant SEARCHD_COMMAND_SEARCH	=> 0;
-use constant SEARCHD_COMMAND_EXCERPT	=> 1;
-use constant SEARCHD_COMMAND_UPDATE	=> 2;
-use constant SEARCHD_COMMAND_KEYWORDS	=> 3;
-use constant SEARCHD_COMMAND_PERSIST	=> 4;
-use constant SEARCHD_COMMAND_STATUS	=> 5;
-use constant SEARCHD_COMMAND_QUERY	=> 6;
-use constant SEARCHD_COMMAND_FLUSHATTRS	=> 7;
+use constant SEARCHD_COMMAND_SEARCH     => 0;
+use constant SEARCHD_COMMAND_EXCERPT    => 1;
+use constant SEARCHD_COMMAND_UPDATE     => 2;
+use constant SEARCHD_COMMAND_KEYWORDS   => 3;
+use constant SEARCHD_COMMAND_PERSIST    => 4;
+use constant SEARCHD_COMMAND_STATUS     => 5;
+use constant SEARCHD_COMMAND_QUERY      => 6;
+use constant SEARCHD_COMMAND_FLUSHATTRS => 7;
 
 # current client-side command implementation versions
-use constant VER_COMMAND_SEARCH		=> 0x117;
-use constant VER_COMMAND_EXCERPT	=> 0x100;
-use constant VER_COMMAND_UPDATE	        => 0x102;
-use constant VER_COMMAND_KEYWORDS       => 0x100;
-use constant VER_COMMAND_STATUS         => 0x100;
-use constant VER_COMMAND_QUERY         => 0x100;
-use constant VER_COMMAND_FLUSHATTRS    => 0x100;
+use constant VER_COMMAND_SEARCH      => 0x117;
+use constant VER_COMMAND_EXCERPT     => 0x100;
+use constant VER_COMMAND_UPDATE      => 0x102;
+use constant VER_COMMAND_KEYWORDS    => 0x100;
+use constant VER_COMMAND_STATUS      => 0x100;
+use constant VER_COMMAND_QUERY       => 0x100;
+use constant VER_COMMAND_FLUSHATTRS  => 0x100;
 
 sub new {
+	my ($class, %opts) = @_;
+	my $self = { %opts };
+	bless $self, $class;
+	return $self;
 }
 
 # connect to searchd on $host:$port and send the query represented by
@@ -66,8 +70,9 @@ sub execute {
 	# send the query
 	my $request = $query->serialize;
 	my $num_queries = 1; # TODO: allow for > 1
-	my $full_request = pack ("nnN/a*",
-		SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $request); 
+	my $request_header = pack("Na*", $num_queries, $request);
+	my $full_request = pack("nnN/a*",
+		SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $request_header); 
 	$handle->push_write($full_request);
 
 	# read the response header and response
@@ -80,7 +85,7 @@ sub execute {
 		# read the response
 		$handle->push_read(chunk => $response_size, sub {
 			my ($handle, $response) = @_;
-			# TODO: parse response (see RunQueries)
+			# parse response
 			my $results = AnyEvent::Sphinx::Results->new(
 				response => \$response);
 			$cb->($results);

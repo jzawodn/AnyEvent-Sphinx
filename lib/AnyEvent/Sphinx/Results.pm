@@ -29,6 +29,7 @@ sub new {
 
 	if ($self->{response}) {
 		$self->parse_response($self->{response});
+		delete $self->{response};
 		# results go in $self->{results}
 	}
 
@@ -42,6 +43,7 @@ sub parse_response {
 
     my $p = 0;
     my $max = length($response); # Protection from broken response
+	warn "max: $max";
 
     my @results;
     for (my $ires = 0; $ires < $nreqs; $ires++) {
