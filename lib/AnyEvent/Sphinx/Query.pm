@@ -27,6 +27,9 @@ use constant SPH_RANK_NONE           => 2;
 use constant SPH_RANK_WORDCOUNT      => 3;
 use constant SPH_RANK_PROXIMITY      => 4;
 use constant SPH_RANK_MATCHANY       => 5;
+use constant SPH_RANK_FIELDMASK      => 6;
+use constant SPH_RANK_SPH04          => 7;
+use constant SPH_RANK_EXPR           => 8;
 
 # known sort modes
 use constant SPH_SORT_RELEVANCE     => 0;
