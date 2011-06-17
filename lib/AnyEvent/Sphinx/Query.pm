@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Carp;
 use Config;
-use Encode qw(encode_utf8 decode_utf8);
+use Encode qw(encode_utf8);
 use base 'Exporter';
 
 my $is_native64 = $Config{longsize} == 8 || defined $Config{use64bitint} || defined $Config{use64bitall};
@@ -98,9 +98,6 @@ sub new {
 		_select         => q{*},
 		_query          => $query || undef,
 		_index          => $index || undef,
-
-		_string_encoder => \&encode_utf8,
-		_string_decoder => \&decode_utf8,
 	};
 	bless $self, $class;
 	return $self;
@@ -141,7 +138,7 @@ sub serialize {
     my $req;
     $req = pack ( "NNNNN", $self->{_offset}, $self->{_limit}, $self->{_mode}, $self->{_ranker}, $self->{_sort} ); # mode and limits
     $req .= pack ( "N/a*", $self->{_sortby});
-    $req .= pack ( "N/a*", $self->{_string_encoder}->($query) ); # query itself
+    $req .= pack ( "N/a*", encode_utf8($query) ); # query itself
     $req .= pack ( "N*", scalar(@{$self->{_weights}}), @{$self->{_weights}});
     $req .= pack ( "N/a*", $index); # indexes
     $req .= pack ( "N", 1) 
@@ -272,17 +269,6 @@ sub _Warning {
 sub GetLastWarning {
 	my $self = shift;
 	return $self->{_warning};
-}
-
-sub SetEncoders {
-    my $self = shift;
-    my $encoder = shift;
-    my $decoder = shift;
-
-    $self->{_string_encoder} = $encoder ? $encoder : \&encode_utf8;
-    $self->{_string_decoder} = $decoder ? $decoder : \&decode_utf8;
-	
-    return $self;
 }
 
 sub SetServer {

@@ -1,5 +1,8 @@
 package AnyEvent::Sphinx::Results;
+use strict;
+use warnings;
 use Config;
+use Encode qw(decode_utf8);
 use Math::BigInt;
 
 # known searchd status codes
@@ -41,9 +44,9 @@ sub new {
 sub parse_response {
 	my ($self, $response) = @_;
 
+	my $nreqs = 1; # TODO: support multiple
     my $p = 0;
     my $max = length($response); # Protection from broken response
-	warn "max: $max";
 
     my @results;
     for (my $ires = 0; $ires < $nreqs; $ires++) {
@@ -102,6 +105,7 @@ sub parse_response {
 	    else {
 		( $data->{doc}, $data->{weight} ) = unpack("N*N*", substr($response,$p,8));
 		$p += 8;
+		warn "doc: $data->{doc}";
 	    }
 	    foreach my $attr (@attr_list) {
 		if ($attrs{$attr} == SPH_ATTR_BIGINT) {
@@ -140,7 +144,7 @@ sub parse_response {
 	while ( $words-->0 && $p < $max) {
 	    my $len = unpack ( "N*", substr ( $response, $p, 4 ) ); 
 	    $p += 4;
-	    my $word = $self->{_string_decoder}->( substr ( $response, $p, $len ) ); 
+	    my $word = decode_utf8(substr($response, $p, $len)); 
 	    $p += $len;
 	    my ($docs, $hits) = unpack ("N*N*", substr($response, $p, 8));
 	    $p += 8;

@@ -87,7 +87,7 @@ sub execute {
 			my ($handle, $response) = @_;
 			# parse response
 			my $results = AnyEvent::Sphinx::Results->new(
-				response => \$response);
+				response => $response);
 			$cb->($results);
 		});
 	});
